@@ -1,8 +1,8 @@
 import { InputForm } from "./InputForm";
-import React, { useCallback } from "react";
-import Particles from "@tsparticles/react";
+import React, { useCallback, useEffect, useState } from "react";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
-import type { Engine, ISourceOptions } from "@tsparticles/engine";
+import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
 
 interface WelcomeScreenProps {
   handleSubmit: (
@@ -19,8 +19,21 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onCancel,
   isLoading,
 }) => {
-  const particlesInit = useCallback(async (engine: Engine) => {
-    await loadSlim(engine);
+  const [init, setInit] = useState(false);
+
+  // This should be run only once per application lifetime
+  useEffect(() => {
+    initParticlesEngine(async (engine: Engine) => {
+      console.log("Loading particles engine...");
+      await loadSlim(engine);
+      console.log("Particles engine loaded successfully!");
+    }).then(() => {
+      setInit(true);
+    });
+  }, []);
+
+  const particlesLoaded = useCallback(async (container?: Container) => {
+    console.log("Particles container loaded:", container);
   }, []);
 
   const particlesOptions: ISourceOptions = {
@@ -59,8 +72,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         color: "#ffffff",
         distance: 150,
         enable: true,
-        opacity: 0.2,
-        width: 1,
+        opacity: 0.8,
+        width: 2,
       },
       move: {
         direction: "none",
@@ -69,23 +82,23 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           default: "bounce",
         },
         random: false,
-        speed: 2,
+        speed: 3,
         straight: false,
       },
       number: {
         density: {
           enable: true,
         },
-        value: 80,
+        value: 50,
       },
       opacity: {
-        value: 0.2,
+        value: 0.8,
       },
       shape: {
         type: "circle",
       },
       size: {
-        value: { min: 1, max: 5 },
+        value: { min: 3, max: 8 },
       },
     },
     detectRetina: true,
@@ -93,12 +106,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   return (
     <div className="h-full flex flex-col items-center justify-center text-center px-4 flex-1 w-full relative">
-      <Particles
-        id="tsparticles"
-        init={particlesInit}
-        options={particlesOptions}
-        className="absolute top-0 left-0 w-full h-full"
-      />
+      {init && (
+        <Particles
+          id="tsparticles"
+          particlesLoaded={particlesLoaded}
+          options={particlesOptions}
+          className="absolute top-0 left-0 w-full h-full"
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}
+        />
+      )}
       <div className="z-10 flex flex-col items-center justify-center gap-4">
         <div className="animate-fadeInUp">
           <h1 className="text-6xl md:text-8xl font-bold text-white/90 mb-3 tracking-wider">

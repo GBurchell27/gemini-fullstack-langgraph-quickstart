@@ -8,7 +8,7 @@ import { GreenButton } from "@/components/ui/green-button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GreenTabsList, GreenTabsTrigger } from "@/components/ui/green-tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Badge } from "@/components/ui/badge";
 import { GreenBadge } from "@/components/ui/green-badge";
 import { 
@@ -26,6 +26,7 @@ import {
 interface BlogResult {
   title: string;
   content: string;
+  content_markdown?: string;
   seo_metadata?: {
     meta_title?: string;
     meta_description?: string;
@@ -238,6 +239,47 @@ export const BlogWriter: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const convertMarkdownToHtml = (markdown: string): string => {
+    if (!markdown) return '';
+
+    let html = markdown
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-semibold text-white/90 mt-6 mb-3">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-semibold text-white/95 mt-8 mb-4">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold text-white mt-8 mb-6">$1</h1>')
+      
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+      
+      // Italic
+      .replace(/\*(.*?)\*/g, '<em class="italic text-white/90">$1</em>')
+      
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-green-400 hover:text-green-300 underline transition-colors" target="_blank" rel="noopener noreferrer">$1</a>')
+      
+      // Code blocks
+      .replace(/```([^`]+)```/g, '<pre class="bg-black/30 border border-white/10 rounded-lg p-4 my-4 overflow-x-auto"><code class="text-green-300 text-sm">$1</code></pre>')
+      
+      // Inline code
+      .replace(/`([^`]+)`/g, '<code class="bg-black/30 text-green-300 px-1.5 py-0.5 rounded text-sm">$1</code>')
+      
+      // Lists
+      .replace(/^\* (.*$)/gim, '<li class="ml-4 mb-2 text-white/85">• $1</li>')
+      .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2 text-white/85">• $1</li>')
+      
+      // Line breaks
+      .replace(/\n\n/g, '</p><p class="mb-4 text-white/85 leading-relaxed">')
+      .replace(/\n/g, '<br/>');
+
+    // Wrap in paragraphs
+    html = '<p class="mb-4 text-white/85 leading-relaxed">' + html + '</p>';
+    
+    // Fix multiple paragraph tags
+    html = html.replace(/<\/p><p[^>]*>/g, '</p><p class="mb-4 text-white/85 leading-relaxed">');
+
+    return html;
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -326,24 +368,35 @@ export const BlogWriter: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden">
-                  <TabsContent value="content" className="h-full">
-                    <Card className="h-full bg-white/5 border-white/10">
-                      <ScrollArea className="h-full p-6">
-                        <div className="prose prose-invert max-w-none text-white/80">
-                          <pre className="whitespace-pre-wrap font-sans">{blogResult.content}</pre>
+                <div className="flex-1 min-h-0">
+                  <TabsContent value="content" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                    <Card className="h-full bg-white/5 border-white/10 flex flex-col">
+                      <div 
+                        className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4"
+                        style={{ maxHeight: 'calc(100vh - 280px)' }}
+                      >
+                        <div className="prose prose-invert prose-lg max-w-none text-white/90">
+                          <div 
+                            className="markdown-content"
+                            dangerouslySetInnerHTML={{ 
+                              __html: convertMarkdownToHtml(blogResult.content || blogResult.content_markdown || '') 
+                            }} 
+                          />
                         </div>
-                      </ScrollArea>
+                      </div>
                     </Card>
                   </TabsContent>
 
-                  <TabsContent value="markdown" className="h-full">
-                    <Card className="h-full bg-white/5 border-white/10">
-                      <ScrollArea className="h-full p-6">
-                        <pre className="text-white/80 text-sm font-mono whitespace-pre-wrap">
-                          {blogResult.content}
+                  <TabsContent value="markdown" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                    <Card className="h-full bg-white/5 border-white/10 flex flex-col">
+                      <div 
+                        className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4"
+                        style={{ maxHeight: 'calc(100vh - 280px)' }}
+                      >
+                        <pre className="text-white/80 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+                          {blogResult.content || blogResult.content_markdown || ''}
                         </pre>
-                      </ScrollArea>
+                      </div>
                     </Card>
                   </TabsContent>
                 </div>
@@ -351,13 +404,16 @@ export const BlogWriter: React.FC = () => {
             </div>
 
             {/* Right Panel - Analytics */}
-            <div className="bg-white/5 backdrop-blur-lg rounded-lg border border-white/10 p-4">
+            <div className="bg-white/5 backdrop-blur-lg rounded-lg border border-white/10 p-4 flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="h-5 w-5 text-green-400" />
                 <h2 className="text-lg font-semibold text-white/80">Analytics</h2>
               </div>
               
-              <ScrollArea className="h-full max-h-[calc(100vh-200px)]">
+              <div 
+                className="flex-1 overflow-y-auto overflow-x-hidden pr-2"
+                style={{ maxHeight: 'calc(100vh - 240px)' }}
+              >
                 <div className="space-y-4">
                   {/* SEO Optimization Card */}
                   <Card className="bg-white/5 border-white/10 p-4">
@@ -444,7 +500,7 @@ export const BlogWriter: React.FC = () => {
                     </div>
                   </Card>
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           </div>
         )}

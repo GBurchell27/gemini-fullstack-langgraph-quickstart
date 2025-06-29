@@ -130,27 +130,49 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
         logger.info("=" * 50)
         
         try:
+            # Ensure all required state fields exist with defensive defaults
+            if 'internal_links' not in state:
+                state['internal_links'] = []
+                logger.warning("internal_links field was missing, initialized to empty list")
+                
+            if 'external_links' not in state:
+                state['external_links'] = []
+                logger.warning("external_links field was missing, initialized to empty list")
+                
+            if 'debug_info' not in state:
+                state['debug_info'] = []
+                logger.warning("debug_info field was missing, initialized to empty list")
+            
             # Get final content
             final_content = state.get('content_with_links', state.get('assembled_content', ''))
             
-            # Get metadata
+            if not final_content:
+                logger.error("No content found for final output generation")
+                raise ValueError("No content available for final output")
+            
+            # Get metadata with defensive defaults
             content_strategy = state.get('content_strategy', {})
             title_options = content_strategy.get('title_options', [])
             selected_title = title_options[0] if title_options else state.get('blog_idea', 'Blog Post')
             
-            # Create final blog result
+            # Create final blog result with defensive field access
             blog_result = {
                 'title': selected_title,
+                'content': final_content,  # Changed from content_markdown to content for frontend compatibility
                 'content_markdown': final_content,
                 'seo_metadata': state.get('seo_metadata', {}),
                 'quality_metrics': state.get('quality_metrics', {}),
                 'internal_links': state.get('internal_links', []),
                 'external_links': state.get('external_links', []),
-                'word_count': len(final_content.split()),
+                'word_count': len(final_content.split()) if final_content else 0,
                 'created_at': datetime.now().isoformat(),
                 'processing_summary': {
                     'nodes_executed': len(state.get('debug_info', [])),
                     'workflow_completed': True
+                },
+                'statistics': {
+                    'word_count': len(final_content.split()) if final_content else 0,
+                    'reading_time_minutes': max(1, len(final_content.split()) // 200) if final_content else 1
                 }
             }
             
@@ -162,12 +184,16 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
             logger.info(f"Word count: {blog_result['word_count']}")
             logger.info(f"Internal links: {len(blog_result['internal_links'])}")
             logger.info(f"External links: {len(blog_result['external_links'])}")
+            logger.info(f"Content length: {len(final_content)} characters")
             
             return state
             
         except Exception as e:
-            logger.error(f"Error in final output generation: {str(e)}")
-            state['errors'] = state.get('errors', []) + [f"Output generation failed: {str(e)}"]
+            logger.error(f"Error in final output generation: {str(e)}", exc_info=True)
+            if 'errors' not in state:
+                state['errors'] = []
+            state['errors'].append(f"Output generation failed: {str(e)}")
+            state['current_step'] = 'failed'
             return state
     
     builder.add_node("final_output_generator", final_output_generator)

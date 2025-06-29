@@ -105,6 +105,90 @@ class ContentDatabase:
                 published_date=base_date + timedelta(days=105),
                 meta_description="Learn meta-analysis fundamentals including when to combine studies, assessing heterogeneity, and choosing appropriate statistical models.",
                 word_count=4200
+            ),
+            ContentItem(
+                id="et-001",
+                title="Evidence Tables in Systematic Reviews: Essential Components and Structure",
+                slug="evidence-tables-systematic-reviews-components",
+                url="/blog/evidence-tables-systematic-reviews-components",
+                content_snippet="Evidence tables are crucial tools for organizing and presenting study data in systematic reviews. Learn the essential components including study characteristics, participant demographics, interventions, outcomes, and quality assessments that make evidence tables effective.",
+                category="Data & Analysis",
+                tags=["evidence tables", "data extraction", "study characteristics", "systematic review tools"],
+                published_date=base_date + timedelta(days=120),
+                meta_description="Master the essential components and structure of evidence tables for systematic reviews with practical examples and templates.",
+                word_count=2400
+            ),
+            ContentItem(
+                id="et-002",
+                title="Data Extraction Forms vs Evidence Tables: When to Use Each",
+                slug="data-extraction-forms-vs-evidence-tables",
+                url="/blog/data-extraction-forms-vs-evidence-tables",
+                content_snippet="Understanding the difference between data extraction forms and evidence tables is crucial for systematic review methodology. Data extraction forms capture raw data, while evidence tables present synthesized information for readers.",
+                category="Data & Analysis",
+                tags=["data extraction", "evidence tables", "systematic review methodology", "data management"],
+                published_date=base_date + timedelta(days=135),
+                meta_description="Learn when to use data extraction forms versus evidence tables in systematic reviews and how they complement each other.",
+                word_count=1800
+            ),
+            ContentItem(
+                id="et-003",
+                title="Software Tools for Creating Evidence Tables: RevMan, Covidence, and More",
+                slug="software-tools-evidence-tables-revman-covidence",
+                url="/blog/software-tools-evidence-tables-revman-covidence",
+                content_snippet="Modern software tools can streamline evidence table creation for systematic reviews. Compare popular options including RevMan, Covidence, DistillerSR, and Excel templates to find the best fit for your research team.",
+                category="Management & Tools",
+                tags=["evidence table software", "RevMan", "Covidence", "DistillerSR", "systematic review tools"],
+                published_date=base_date + timedelta(days=150),
+                meta_description="Compare the best software tools for creating evidence tables in systematic reviews, including RevMan, Covidence, and DistillerSR.",
+                word_count=3100
+            ),
+            ContentItem(
+                id="et-004",
+                title="Quality Assessment Integration in Evidence Tables",
+                slug="quality-assessment-integration-evidence-tables",
+                url="/blog/quality-assessment-integration-evidence-tables",
+                content_snippet="Integrating quality assessment results into evidence tables provides readers with immediate context about study reliability. Learn how to incorporate GRADE assessments, risk of bias ratings, and quality scores effectively.",
+                category="Study Selection & Quality",
+                tags=["quality assessment", "evidence tables", "GRADE", "risk of bias", "study quality"],
+                published_date=base_date + timedelta(days=165),
+                meta_description="Learn to integrate quality assessment results into evidence tables using GRADE, risk of bias tools, and quality scoring systems.",
+                word_count=2700
+            ),
+            ContentItem(
+                id="et-005",
+                title="Evidence Table Templates and Examples for Different Review Types",
+                slug="evidence-table-templates-examples-review-types",
+                url="/blog/evidence-table-templates-examples-review-types",
+                content_snippet="Different types of systematic reviews require different evidence table structures. Explore templates and examples for intervention reviews, diagnostic accuracy studies, prognostic reviews, and qualitative evidence synthesis.",
+                category="Core Methodology",
+                tags=["evidence table templates", "review types", "intervention reviews", "diagnostic accuracy", "qualitative synthesis"],
+                published_date=base_date + timedelta(days=180),
+                meta_description="Download evidence table templates for different systematic review types including intervention, diagnostic, and qualitative reviews.",
+                word_count=2900
+            ),
+            ContentItem(
+                id="et-006",
+                title="Common Mistakes in Evidence Table Design and How to Avoid Them",
+                slug="common-mistakes-evidence-table-design",
+                url="/blog/common-mistakes-evidence-table-design",
+                content_snippet="Avoid common pitfalls in evidence table design that can confuse readers and reduce review impact. Learn about overcrowding, inconsistent formatting, missing key data, and poor column organization.",
+                category="Quality Standards",
+                tags=["evidence table design", "common mistakes", "best practices", "table formatting"],
+                published_date=base_date + timedelta(days=195),
+                meta_description="Avoid common evidence table design mistakes with expert tips on formatting, organization, and data presentation.",
+                word_count=2200
+            ),
+            ContentItem(
+                id="et-007",
+                title="Presenting Complex Interventions in Evidence Tables",
+                slug="presenting-complex-interventions-evidence-tables",
+                url="/blog/presenting-complex-interventions-evidence-tables",
+                content_snippet="Complex interventions with multiple components require careful presentation in evidence tables. Learn strategies for summarizing multi-component interventions, behavioral interventions, and implementation details clearly.",
+                category="Data & Analysis",
+                tags=["complex interventions", "evidence tables", "intervention description", "multi-component interventions"],
+                published_date=base_date + timedelta(days=210),
+                meta_description="Master the presentation of complex multi-component interventions in evidence tables with clear formatting strategies.",
+                word_count=2600
             )
         ]
         

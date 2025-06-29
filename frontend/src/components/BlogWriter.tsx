@@ -254,7 +254,7 @@ export const BlogWriter: React.FC = () => {
               onClick={handleReset}
               variant="outline"
               size="sm"
-              className="border-white/20 text-white/80 hover:bg-white/10"
+              className="border-green-500/30 text-green-400 hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/50"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               New Blog
@@ -291,16 +291,25 @@ export const BlogWriter: React.FC = () => {
           <div className="h-full p-4">
             <Tabs defaultValue="content" className="h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
-                <TabsList className="bg-white/10 border border-white/20">
-                  <TabsTrigger value="content">
+                <TabsList className="bg-green-500/10 border border-green-500/20 data-[state=active]:bg-green-500/20">
+                  <TabsTrigger 
+                    value="content"
+                    className="text-white/70 data-[state=active]:text-green-400 data-[state=active]:bg-green-500/20 hover:text-green-300 hover:bg-green-500/10"
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
                   </TabsTrigger>
-                  <TabsTrigger value="markdown">
+                  <TabsTrigger 
+                    value="markdown"
+                    className="text-white/70 data-[state=active]:text-green-400 data-[state=active]:bg-green-500/20 hover:text-green-300 hover:bg-green-500/10"
+                  >
                     <Code className="h-4 w-4 mr-2" />
                     Markdown
                   </TabsTrigger>
-                  <TabsTrigger value="analytics">
+                  <TabsTrigger 
+                    value="analytics"
+                    className="text-white/70 data-[state=active]:text-green-400 data-[state=active]:bg-green-500/20 hover:text-green-300 hover:bg-green-500/10"
+                  >
                     <TrendingUp className="h-4 w-4 mr-2" />
                     Analytics
                   </TabsTrigger>
@@ -311,7 +320,7 @@ export const BlogWriter: React.FC = () => {
                     onClick={() => copyToClipboard(blogResult.content)}
                     variant="outline"
                     size="sm"
-                    className="border-white/20 text-white/80 hover:bg-white/10"
+                    className="border-green-500/30 text-green-400 hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/50"
                   >
                     <Copy className="h-4 w-4 mr-2" />
                     Copy
@@ -320,7 +329,7 @@ export const BlogWriter: React.FC = () => {
                     onClick={downloadAsMarkdown}
                     variant="outline"
                     size="sm"
-                    className="border-white/20 text-white/80 hover:bg-white/10"
+                    className="border-green-500/30 text-green-400 hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/50"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download
@@ -371,7 +380,7 @@ export const BlogWriter: React.FC = () => {
                             <label className="text-xs text-white/60">Focus Keywords</label>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {blogResult.seo_metadata.focus_keywords.map((keyword, index) => (
-                                <Badge key={index} className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                <Badge key={index} className="bg-green-500/20 text-green-400 border-green-500/30">
                                   {keyword}
                                 </Badge>
                               ))}

@@ -131,11 +131,24 @@ def internal_linking_node(
     logger.info("=" * 50)
     
     try:
+        # Ensure internal_links field exists and is properly initialized
+        if 'internal_links' not in state:
+            state['internal_links'] = []
+            logger.info("Initialized internal_links field in state")
+            
+        # Ensure debug_info field exists
+        if 'debug_info' not in state:
+            state['debug_info'] = []
+            logger.info("Initialized debug_info field in state")
+        
         # Get assembled content
         assembled_content = state.get('assembled_content', '')
         if not assembled_content:
             logger.warning("No assembled content found for internal linking")
             add_warning(state, "No assembled content available for internal linking")
+            # Set content_with_links to assembled_content even if empty, and continue workflow
+            state['content_with_links'] = assembled_content
+            state['current_step'] = 'external_linking'
             return state
         
         # Get existing internal content matches
@@ -150,6 +163,14 @@ def internal_linking_node(
         logger.info(f"Content length: {len(assembled_content)} characters")
         logger.info(f"Available internal content: {len(internal_content_matches)} pieces")
         
+        # If no internal content is available, skip linking but continue workflow
+        if not internal_content_matches:
+            logger.info("No internal content matches available for linking")
+            state['content_with_links'] = assembled_content
+            state['internal_links'] = []
+            state['current_step'] = 'external_linking'
+            return state
+        
         # Analyze content for linking opportunities
         linking_analysis = analyze_internal_linking_opportunities(
             assembled_content,
@@ -162,6 +183,7 @@ def internal_linking_node(
             logger.info("No internal linking opportunities identified")
             state['content_with_links'] = assembled_content
             state['internal_links'] = []
+            state['current_step'] = 'external_linking'
             return state
         
         # Process and optimize links
@@ -198,7 +220,7 @@ def internal_linking_node(
                 'inserted': link.get('inserted', False)
             })
         
-        # Update state
+        # Update state with defensive checks
         state['content_with_links'] = content_with_links
         state['internal_links'] = internal_link_objects
         
@@ -213,6 +235,10 @@ def internal_linking_node(
             'timestamp': datetime.now().isoformat()
         }
         
+        # Ensure debug_info exists before appending
+        if 'debug_info' not in state:
+            state['debug_info'] = []
+            
         state['debug_info'].append({
             'node': 'internal_linking',
             'timestamp': datetime.now().isoformat(),
@@ -228,12 +254,28 @@ def internal_linking_node(
         update_progress(state, 'enhancement', 0.7)
         state['current_step'] = 'external_linking'
         
+        logger.info("Internal linking node completed successfully")
+        
         return state
         
     except Exception as e:
         error_msg = f"Error in internal linking: {str(e)}"
         logger.error(error_msg, exc_info=True)
         add_error(state, error_msg)
+        
+        # Ensure internal_links field exists even on error
+        if 'internal_links' not in state:
+            state['internal_links'] = []
+            
+        # Ensure content_with_links is set to continue workflow
+        assembled_content = state.get('assembled_content', '')
+        state['content_with_links'] = assembled_content
+        
+        # Set next step to continue workflow even on error
+        state['current_step'] = 'external_linking'
+        
+        logger.info("Internal linking failed but workflow will continue")
+        
         return state
 
 

@@ -65,6 +65,7 @@ class BlogWriterState(TypedDict):
     quality_score: Optional[float]
     quality_report: Optional[Dict[str, Any]]
     final_output: Optional[Dict[str, Any]]
+    final_blog_result: Optional[Dict[str, Any]]
     
     # System tracking
     current_step: str
@@ -182,6 +183,7 @@ def initialize_blog_writer_state(blog_idea: str, **kwargs) -> BlogWriterState:
         quality_score=None,
         quality_report=None,
         final_output=None,
+        final_blog_result=None,
         
         # System
         current_step='input_processing',

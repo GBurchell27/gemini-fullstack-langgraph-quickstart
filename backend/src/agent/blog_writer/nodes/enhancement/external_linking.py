@@ -143,6 +143,11 @@ def external_linking_node(
     logger.info("=" * 50)
     
     try:
+        # Ensure external_links field exists and is properly initialized
+        if 'external_links' not in state:
+            state['external_links'] = []
+            logger.info("Initialized external_links field in state")
+        
         # Get content with internal links
         content_with_links = state.get('content_with_links')
         if not content_with_links:
@@ -152,6 +157,8 @@ def external_linking_node(
         if not content_with_links:
             logger.warning("No content found for external linking")
             add_warning(state, "No content available for external linking")
+            # Ensure we still set the next step to continue workflow
+            state['current_step'] = 'final_output'
             return state
         
         # Get research context and metadata
@@ -176,6 +183,7 @@ def external_linking_node(
         if not external_linking_analysis or not external_linking_analysis.get('external_links'):
             logger.info("No external linking opportunities identified")
             state['external_links'] = []
+            state['current_step'] = 'final_output'
             return state
         
         # Validate suggested external links
@@ -202,7 +210,7 @@ def external_linking_node(
                     'inserted': link.get('inserted', False)
                 })
         
-        # Update state
+        # Update state with defensive checks
         state['content_with_links'] = content_with_external_links
         state['external_links'] = external_link_objects
         
@@ -218,6 +226,10 @@ def external_linking_node(
             'timestamp': datetime.now().isoformat()
         }
         
+        # Ensure debug_info exists before appending
+        if 'debug_info' not in state:
+            state['debug_info'] = []
+            
         state['debug_info'].append({
             'node': 'external_linking',
             'timestamp': datetime.now().isoformat(),
@@ -234,12 +246,22 @@ def external_linking_node(
         update_progress(state, 'enhancement', 0.8)
         state['current_step'] = 'final_output'
         
+        logger.info("External linking node completed successfully")
+        
         return state
         
     except Exception as e:
         error_msg = f"Error in external linking: {str(e)}"
         logger.error(error_msg, exc_info=True)
         add_error(state, error_msg)
+        
+        # Ensure external_links field exists even on error
+        if 'external_links' not in state:
+            state['external_links'] = []
+            
+        # Set next step to continue workflow even on error
+        state['current_step'] = 'final_output'
+        
         return state
 
 

@@ -1,0 +1,3 @@
+- where do i input my topic idea?
+- there should be a folder containing the blogs
+- meta 

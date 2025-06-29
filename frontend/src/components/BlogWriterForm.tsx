@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { GreenButton } from "@/components/ui/green-button";
 import { PenLine, User, Palette, Hash, Send, StopCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -96,18 +97,14 @@ export const BlogWriterForm: React.FC<BlogWriterFormProps> = ({
                 <StopCircle className="h-5 w-5" />
               </Button>
             ) : (
-              <Button
+              <GreenButton
                 type="submit"
                 variant="ghost"
-                className={`${
-                  isSubmitDisabled
-                    ? "text-white/30"
-                    : "text-green-400 hover:text-green-300 hover:bg-green-500/10"
-                } p-2 cursor-pointer rounded-full transition-all duration-200 text-base`}
+                className="p-2 cursor-pointer rounded-full text-base"
                 disabled={isSubmitDisabled}
               >
                 <Send className="h-5 w-5" />
-              </Button>
+              </GreenButton>
             )}
           </div>
         </div>
@@ -215,14 +212,14 @@ export const BlogWriterForm: React.FC<BlogWriterFormProps> = ({
           Use Ctrl+Enter to submit • AI-powered content generation with SEO optimization
         </div>
         {!isLoading && (
-          <Button
+          <GreenButton
             type="submit"
             disabled={isSubmitDisabled}
-            className="bg-green-600/20 border border-green-500/30 text-green-400 hover:bg-green-600/30 hover:text-green-300 transition-all duration-200"
+            variant="default"
           >
             <PenLine className="h-4 w-4 mr-2" />
             Generate Blog
-          </Button>
+          </GreenButton>
         )}
       </div>
     </form>

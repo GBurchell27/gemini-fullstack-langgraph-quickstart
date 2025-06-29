@@ -4,10 +4,13 @@ import type { Message } from "@langchain/langgraph-sdk";
 import { BlogWriterForm } from "./BlogWriterForm";
 import { BlogWriterProgress, BlogWriterStep } from "./BlogWriterProgress";
 import { Button } from "@/components/ui/button";
+import { GreenButton } from "@/components/ui/green-button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GreenTabsList, GreenTabsTrigger } from "@/components/ui/green-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { GreenBadge } from "@/components/ui/green-badge";
 import { 
   Download, 
   Copy, 
@@ -250,15 +253,14 @@ export const BlogWriter: React.FC = () => {
             </p>
           </div>
           {blogResult && (
-            <Button
+            <GreenButton
               onClick={handleReset}
               variant="outline"
               size="sm"
-              className="border-green-500/30 text-green-400 hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/50"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               New Blog
-            </Button>
+            </GreenButton>
           )}
         </div>
       </div>
@@ -291,49 +293,38 @@ export const BlogWriter: React.FC = () => {
           <div className="h-full p-4">
             <Tabs defaultValue="content" className="h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
-                <TabsList className="bg-green-500/10 border border-green-500/20 data-[state=active]:bg-green-500/20">
-                  <TabsTrigger 
-                    value="content"
-                    className="text-white/70 data-[state=active]:text-green-400 data-[state=active]:bg-green-500/20 hover:text-green-300 hover:bg-green-500/10"
-                  >
+                <GreenTabsList>
+                  <GreenTabsTrigger value="content">
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="markdown"
-                    className="text-white/70 data-[state=active]:text-green-400 data-[state=active]:bg-green-500/20 hover:text-green-300 hover:bg-green-500/10"
-                  >
+                  </GreenTabsTrigger>
+                  <GreenTabsTrigger value="markdown">
                     <Code className="h-4 w-4 mr-2" />
                     Markdown
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="analytics"
-                    className="text-white/70 data-[state=active]:text-green-400 data-[state=active]:bg-green-500/20 hover:text-green-300 hover:bg-green-500/10"
-                  >
+                  </GreenTabsTrigger>
+                  <GreenTabsTrigger value="analytics">
                     <TrendingUp className="h-4 w-4 mr-2" />
                     Analytics
-                  </TabsTrigger>
-                </TabsList>
+                  </GreenTabsTrigger>
+                </GreenTabsList>
                 
                 <div className="flex items-center gap-2">
-                  <Button
+                  <GreenButton
                     onClick={() => copyToClipboard(blogResult.content)}
                     variant="outline"
                     size="sm"
-                    className="border-green-500/30 text-green-400 hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/50"
                   >
                     <Copy className="h-4 w-4 mr-2" />
                     Copy
-                  </Button>
-                  <Button
+                  </GreenButton>
+                  <GreenButton
                     onClick={downloadAsMarkdown}
                     variant="outline"
                     size="sm"
-                    className="border-green-500/30 text-green-400 hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/50"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download
-                  </Button>
+                  </GreenButton>
                 </div>
               </div>
 
@@ -380,9 +371,9 @@ export const BlogWriter: React.FC = () => {
                             <label className="text-xs text-white/60">Focus Keywords</label>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {blogResult.seo_metadata.focus_keywords.map((keyword, index) => (
-                                <Badge key={index} className="bg-green-500/20 text-green-400 border-green-500/30">
+                                <GreenBadge key={index}>
                                   {keyword}
-                                </Badge>
+                                </GreenBadge>
                               ))}
                             </div>
                           </div>

@@ -1,10 +1,10 @@
-import type React from "react";
+import type React, { ReactNode } from "react";
 import type { Message } from "@langchain/langgraph-sdk";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Copy, CopyCheck } from "lucide-react";
 import { InputForm } from "@/components/InputForm";
 import { Button } from "@/components/ui/button";
-import { useState, ReactNode } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,8 @@ import {
 } from "@/components/ActivityTimeline"; // Assuming ActivityTimeline is in the same dir or adjust path
 
 // Markdown component props type from former ReportView
-type MdComponentProps = {
-  className?: string;
-  children?: ReactNode;
-  [key: string]: any;
+type MdComponentProps = Omit<React.HTMLProps<HTMLElement>, "children"> & {
+  children?: React.ReactNode;
 };
 
 // Markdown components (from former ReportView.tsx)
@@ -147,7 +145,7 @@ const HumanMessageBubble: React.FC<HumanMessageBubbleProps> = ({
 }) => {
   return (
     <div
-      className={`text-white rounded-3xl break-words min-h-7 bg-neutral-700 max-w-[100%] sm:max-w-[90%] px-4 pt-3 rounded-br-lg`}
+      className={`text-white rounded-3xl break-words min-h-7 bg-white/10 backdrop-blur-lg border border-white/10 max-w-[100%] sm:max-w-[90%] px-4 py-3 rounded-br-none`}
     >
       <ReactMarkdown components={mdComponents}>
         {typeof message.content === "string"
@@ -161,8 +159,6 @@ const HumanMessageBubble: React.FC<HumanMessageBubbleProps> = ({
 // Props for AiMessageBubble
 interface AiMessageBubbleProps {
   message: Message;
-  historicalActivity: ProcessedEvent[] | undefined;
-  liveActivity: ProcessedEvent[] | undefined;
   isLastMessage: boolean;
   isOverallLoading: boolean;
   mdComponents: typeof mdComponents;
@@ -173,29 +169,16 @@ interface AiMessageBubbleProps {
 // AiMessageBubble Component
 const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
   message,
-  historicalActivity,
-  liveActivity,
   isLastMessage,
   isOverallLoading,
   mdComponents,
   handleCopy,
   copiedMessageId,
 }) => {
-  // Determine which activity events to show and if it's for a live loading message
-  const activityForThisBubble =
-    isLastMessage && isOverallLoading ? liveActivity : historicalActivity;
-  const isLiveActivityForThisBubble = isLastMessage && isOverallLoading;
-
   return (
-    <div className={`relative break-words flex flex-col`}>
-      {activityForThisBubble && activityForThisBubble.length > 0 && (
-        <div className="mb-3 border-b border-neutral-700 pb-3 text-xs">
-          <ActivityTimeline
-            processedEvents={activityForThisBubble}
-            isLoading={isLiveActivityForThisBubble}
-          />
-        </div>
-      )}
+    <div
+      className={`relative break-words flex flex-col bg-white/5 backdrop-blur-lg border border-white/10 p-4 rounded-3xl rounded-bl-none`}
+    >
       <ReactMarkdown components={mdComponents}>
         {typeof message.content === "string"
           ? message.content
@@ -203,7 +186,7 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
       </ReactMarkdown>
       <Button
         variant="default"
-        className={`cursor-pointer bg-neutral-700 border-neutral-600 text-neutral-300 self-end ${
+        className={`cursor-pointer bg-black/20 border-white/10 text-white/70 self-end mt-2 ${
           message.content.length > 0 ? "visible" : "hidden"
         }`}
         onClick={() =>
@@ -228,8 +211,6 @@ interface ChatMessagesViewProps {
   scrollAreaRef: React.RefObject<HTMLDivElement | null>;
   onSubmit: (inputValue: string, effort: string, model: string) => void;
   onCancel: () => void;
-  liveActivityEvents: ProcessedEvent[];
-  historicalActivities: Record<string, ProcessedEvent[]>;
 }
 
 export function ChatMessagesView({
@@ -238,8 +219,6 @@ export function ChatMessagesView({
   scrollAreaRef,
   onSubmit,
   onCancel,
-  liveActivityEvents,
-  historicalActivities,
 }: ChatMessagesViewProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
@@ -255,7 +234,7 @@ export function ChatMessagesView({
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
-        <div className="p-4 md:p-6 space-y-2 max-w-4xl mx-auto pt-16">
+        <div className="p-4 md:p-6 space-y-4">
           {messages.map((message, index) => {
             const isLast = index === messages.length - 1;
             return (
@@ -273,8 +252,6 @@ export function ChatMessagesView({
                   ) : (
                     <AiMessageBubble
                       message={message}
-                      historicalActivity={historicalActivities[message.id!]}
-                      liveActivity={liveActivityEvents} // Pass global live events
                       isLastMessage={isLast}
                       isOverallLoading={isLoading} // Pass global loading state
                       mdComponents={mdComponents}
@@ -290,22 +267,11 @@ export function ChatMessagesView({
             (messages.length === 0 ||
               messages[messages.length - 1].type === "human") && (
               <div className="flex items-start gap-3 mt-3">
-                {" "}
-                {/* AI message row structure */}
-                <div className="relative group max-w-[85%] md:max-w-[80%] rounded-xl p-3 shadow-sm break-words bg-neutral-800 text-neutral-100 rounded-bl-none w-full min-h-[56px]">
-                  {liveActivityEvents.length > 0 ? (
-                    <div className="text-xs">
-                      <ActivityTimeline
-                        processedEvents={liveActivityEvents}
-                        isLoading={true}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-start h-full">
-                      <Loader2 className="h-5 w-5 animate-spin text-neutral-400 mr-2" />
-                      <span>Processing...</span>
-                    </div>
-                  )}
+                <div className="relative group max-w-[85%] md:max-w-[80%] rounded-xl p-3 shadow-sm break-words bg-white/5 backdrop-blur-lg border border-white/10 rounded-bl-none w-full min-h-[56px]">
+                  <div className="flex items-center justify-start h-full">
+                    <Loader2 className="h-5 w-5 animate-spin text-white/70 mr-2" />
+                    <span className="text-white/70">Processing...</span>
+                  </div>
                 </div>
               </div>
             )}

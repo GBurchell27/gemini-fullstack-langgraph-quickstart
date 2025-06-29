@@ -1,10 +1,42 @@
 import { useStream } from "@langchain/langgraph-sdk/react";
 import type { Message } from "@langchain/langgraph-sdk";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ProcessedEvent } from "@/components/ActivityTimeline";
+import {
+  ProcessedEvent,
+  ActivityTimeline,
+} from "@/components/ActivityTimeline";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatMessagesView } from "@/components/ChatMessagesView";
 import { Button } from "@/components/ui/button";
+import { UILayout } from "@/components/UILayout";
+
+interface GenerateQueryEvent {
+  generate_query: {
+    search_query?: string[];
+  };
+}
+
+interface WebResearchEvent {
+  web_research: {
+    sources_gathered?: { label: string }[];
+  };
+}
+
+interface ReflectionEvent {
+  reflection: object;
+}
+
+interface FinalizeAnswerEvent {
+  finalize_answer: object;
+}
+
+type StreamEvent = Partial<
+  GenerateQueryEvent & WebResearchEvent & ReflectionEvent & FinalizeAnswerEvent
+>;
+
+interface StreamError {
+  message: string;
+}
 
 export default function App() {
   const [processedEventsTimeline, setProcessedEventsTimeline] = useState<
@@ -27,7 +59,7 @@ export default function App() {
       : "http://localhost:8123",
     assistantId: "agent",
     messagesKey: "messages",
-    onUpdateEvent: (event: any) => {
+    onUpdateEvent: (event: StreamEvent) => {
       let processedEvent: ProcessedEvent | null = null;
       if (event.generate_query) {
         processedEvent = {
@@ -38,7 +70,7 @@ export default function App() {
         const sources = event.web_research.sources_gathered || [];
         const numSources = sources.length;
         const uniqueLabels = [
-          ...new Set(sources.map((s: any) => s.label).filter(Boolean)),
+          ...new Set(sources.map((s) => s.label).filter(Boolean)),
         ];
         const exampleLabels = uniqueLabels.slice(0, 3).join(", ");
         processedEvent = {
@@ -66,8 +98,16 @@ export default function App() {
         ]);
       }
     },
-    onError: (error: any) => {
-      setError(error.message);
+    onError: (error: unknown) => {
+      let errorMessage = "An unknown error occurred";
+      if (typeof error === "object" && error !== null && "message" in error) {
+        errorMessage = String((error as { message: unknown }).message);
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+      setError(errorMessage);
     },
   });
 
@@ -149,41 +189,56 @@ export default function App() {
     window.location.reload();
   }, [thread]);
 
-  return (
-    <div className="flex h-screen bg-neutral-800 text-neutral-100 font-sans antialiased">
-      <main className="h-full w-full max-w-4xl mx-auto">
-          {thread.messages.length === 0 ? (
-            <WelcomeScreen
-              handleSubmit={handleSubmit}
-              isLoading={thread.isLoading}
-              onCancel={handleCancel}
-            />
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="flex flex-col items-center justify-center gap-4">
-                <h1 className="text-2xl text-red-400 font-bold">Error</h1>
-                <p className="text-red-400">{JSON.stringify(error)}</p>
+  const leftPanelContent = (
+    <div className="h-full">
+      <h2 className="text-xl font-bold mb-4 text-white/80">Activity Log</h2>
+      <ActivityTimeline
+        processedEvents={processedEventsTimeline}
+        isLoading={thread.isLoading}
+      />
+    </div>
+  );
 
-                <Button
-                  variant="destructive"
-                  onClick={() => window.location.reload()}
-                >
-                  Retry
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <ChatMessagesView
-              messages={thread.messages}
-              isLoading={thread.isLoading}
-              scrollAreaRef={scrollAreaRef}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-              liveActivityEvents={processedEventsTimeline}
-              historicalActivities={historicalActivities}
-            />
-          )}
-      </main>
+  const rightPanelContent = (
+    <>
+      {thread.messages.length === 0 ? (
+        <WelcomeScreen
+          handleSubmit={handleSubmit}
+          isLoading={thread.isLoading}
+          onCancel={handleCancel}
+        />
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <h1 className="text-2xl text-red-400 font-bold">Error</h1>
+            <p className="text-red-400">{JSON.stringify(error)}</p>
+
+            <Button
+              variant="destructive"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <ChatMessagesView
+          messages={thread.messages}
+          isLoading={thread.isLoading}
+          scrollAreaRef={scrollAreaRef}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
+      )}
+    </>
+  );
+
+  return (
+    <div className="h-screen text-white font-sans antialiased">
+      <UILayout
+        leftPanel={leftPanelContent}
+        rightPanel={rightPanelContent}
+      />
     </div>
   );
 }

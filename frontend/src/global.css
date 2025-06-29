@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap");
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -119,6 +120,12 @@
     /* Prevent scroll bounce/overscroll on mobile */
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    font-family: "Orbitron", sans-serif;
+
+    /* Animated gradient background */
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
   }
   html {
     /* Prevent scroll bounce on the entire page */
@@ -144,6 +151,17 @@
 @keyframes fadeInUpSmooth {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Animation Classes */

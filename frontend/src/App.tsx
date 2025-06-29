@@ -7,8 +7,11 @@ import {
 } from "@/components/ActivityTimeline";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatMessagesView } from "@/components/ChatMessagesView";
+import { BlogWriter } from "@/components/BlogWriter";
 import { Button } from "@/components/ui/button";
 import { UILayout } from "@/components/UILayout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, PenLine } from "lucide-react";
 
 interface GenerateQueryEvent {
   generate_query: {
@@ -39,6 +42,7 @@ interface StreamError {
 }
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<"research" | "blog">("research");
   const [processedEventsTimeline, setProcessedEventsTimeline] = useState<
     ProcessedEvent[]
   >([]);
@@ -189,7 +193,7 @@ export default function App() {
     window.location.reload();
   }, [thread]);
 
-  const leftPanelContent = (
+  const leftPanelContent = activeTab === "research" ? (
     <div className="h-full">
       <h2 className="text-xl font-bold mb-4 text-white/80">Activity Log</h2>
       <ActivityTimeline
@@ -197,9 +201,17 @@ export default function App() {
         isLoading={thread.isLoading}
       />
     </div>
+  ) : (
+    <div className="h-full flex items-center justify-center">
+      <div className="text-center text-white/60">
+        <PenLine className="h-12 w-12 mx-auto mb-3 text-green-400" />
+        <h3 className="text-lg font-semibold mb-2">Blog Writer Mode</h3>
+        <p className="text-sm">Use the panel on the right to create your blog post</p>
+      </div>
+    </div>
   );
 
-  const rightPanelContent = (
+  const rightPanelContent = activeTab === "research" ? (
     <>
       {thread.messages.length === 0 ? (
         <WelcomeScreen
@@ -231,14 +243,43 @@ export default function App() {
         />
       )}
     </>
+  ) : (
+    <BlogWriter />
   );
 
   return (
     <div className="h-screen text-white font-sans antialiased">
-      <UILayout
-        leftPanel={leftPanelContent}
-        rightPanel={rightPanelContent}
-      />
+      {/* Navigation Tabs */}
+      <div className="border-b border-white/10 bg-black/20 backdrop-blur-md">
+        <div className="container mx-auto">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "research" | "blog")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-transparent border-none h-14">
+              <TabsTrigger 
+                value="research" 
+                className="flex items-center gap-2 text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+              >
+                <Search className="h-4 w-4" />
+                Research Agent
+              </TabsTrigger>
+              <TabsTrigger 
+                value="blog" 
+                className="flex items-center gap-2 text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+              >
+                <PenLine className="h-4 w-4" />
+                Blog Writer
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="h-[calc(100vh-56px)]">
+        <UILayout
+          leftPanel={leftPanelContent}
+          rightPanel={rightPanelContent}
+        />
+      </div>
     </div>
   );
 }

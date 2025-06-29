@@ -31,13 +31,13 @@ genai_client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 def web_research_dispatcher(
     state: BlogWriterState,
     config: RunnableConfig
-) -> List[Send]:
+) -> BlogWriterState:
     """
     Dispatch web searches in parallel based on research plan.
     
     This node:
     1. Gets search queries from research plan
-    2. Creates Send objects for parallel execution
+    2. Stores queries for conditional routing
     3. Respects search budget limits
     
     Args:
@@ -45,7 +45,7 @@ def web_research_dispatcher(
         config: LangGraph configuration
         
     Returns:
-        List of Send objects for parallel web searches
+        Updated state with search queries prepared
     """
     
     logger.info("=" * 50)
@@ -59,12 +59,13 @@ def web_research_dispatcher(
     
     if not search_queries:
         logger.warning("No search queries found in research plan")
-        return []
+        state['current_step'] = 'internal_research'
+        return state
     
     # Limit searches to budget
     queries_to_execute = search_queries[:max_searches]
     
-    logger.info(f"Dispatching {len(queries_to_execute)} web searches")
+    logger.info(f"Preparing {len(queries_to_execute)} web searches")
     logger.info(f"Search budget: {max_searches}")
     
     if len(search_queries) > max_searches:
@@ -74,27 +75,23 @@ def web_research_dispatcher(
             f"Limited to {max_searches} searches, skipping {len(search_queries) - max_searches} queries"
         )
     
-    # Create Send objects for parallel execution
-    sends = []
+    # Store queries for execution
+    state['pending_searches'] = []
     for idx, query in enumerate(queries_to_execute):
-        logger.debug(f"Dispatching search {idx+1}: {query}")
-        sends.append(
-            Send(
-                "perform_web_search",
-                {
-                    "search_query": query,
-                    "search_id": idx,
-                    "blog_idea": state.get('blog_idea', ''),
-                    "main_topic": state.get('topic_analysis', {}).get('main_topic', ''),
-                    "research_questions": state.get('research_questions', [])
-                }
-            )
-        )
+        logger.debug(f"Preparing search {idx+1}: {query}")
+        state['pending_searches'].append({
+            "search_query": query,
+            "search_id": idx,
+            "blog_idea": state.get('blog_idea', ''),
+            "main_topic": state.get('topic_analysis', {}).get('main_topic', ''),
+            "research_questions": state.get('research_questions', [])
+        })
     
     # Update progress
     update_progress(state, 'web_research', 0.4)
+    state['current_step'] = 'web_search_execution'
     
-    return sends
+    return state
 
 
 def perform_web_search(
@@ -299,13 +296,14 @@ def aggregate_web_research(
     config: RunnableConfig
 ) -> BlogWriterState:
     """
-    Aggregate results from parallel web searches.
+    Execute web searches and aggregate results.
     
     This node:
-    1. Collects all search results
-    2. Deduplicates sources
-    3. Creates summary statistics
-    4. Updates progress
+    1. Executes pending searches sequentially
+    2. Collects all search results
+    3. Deduplicates sources
+    4. Creates summary statistics
+    5. Updates progress
     
     Args:
         state: Current blog writer state
@@ -316,14 +314,51 @@ def aggregate_web_research(
     """
     
     logger.info("=" * 50)
-    logger.info("AGGREGATING WEB RESEARCH RESULTS")
+    logger.info("EXECUTING AND AGGREGATING WEB RESEARCH")
     logger.info("=" * 50)
     
+    # Execute pending searches
+    pending_searches = state.get('pending_searches', [])
     web_results = state.get('web_research_results', [])
+    
+    if pending_searches:
+        logger.info(f"Executing {len(pending_searches)} web searches")
+        
+        for search_config in pending_searches:
+            try:
+                # Execute the search
+                search_result = perform_web_search(search_config, config)
+                
+                # Add results to state
+                if 'web_research_results' in search_result:
+                    web_results.extend(search_result['web_research_results'])
+                
+                # Add executed queries
+                if 'search_queries_executed' in search_result:
+                    executed_queries = state.get('search_queries_executed', [])
+                    executed_queries.extend(search_result['search_queries_executed'])
+                    state['search_queries_executed'] = executed_queries
+                
+                # Add any errors
+                if 'errors' in search_result:
+                    errors = state.get('errors', [])
+                    errors.extend(search_result['errors'])
+                    state['errors'] = errors
+                    
+            except Exception as e:
+                logger.error(f"Error executing search: {str(e)}")
+                errors = state.get('errors', [])
+                errors.append(f"Search execution failed: {str(e)}")
+                state['errors'] = errors
+        
+        # Clear pending searches
+        state['pending_searches'] = []
+        state['web_research_results'] = web_results
     
     if not web_results:
         logger.warning("No web research results to aggregate")
         update_progress(state, 'internal_research', 0.45)
+        state['current_step'] = 'internal_research'
         return state
     
     # Aggregate statistics
@@ -377,5 +412,6 @@ def aggregate_web_research(
     
     # Update progress
     update_progress(state, 'internal_research', 0.45)
+    state['current_step'] = 'internal_research'
     
     return state 

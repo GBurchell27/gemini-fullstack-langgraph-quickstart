@@ -9,25 +9,23 @@ from datetime import datetime
 from langgraph.graph import StateGraph, START, END
 from langchain_core.runnables import RunnableConfig
 
-from .state import BlogWriterState, BlogWriterConfig
-from .nodes import input_processor_node
-from .nodes.topic_analyzer import topic_analyzer_node
-from .nodes.research_coordinator import research_coordinator_node
-from .nodes.research.web_research import (
+from src.agent.blog_writer.state import BlogWriterState, BlogWriterConfig
+from src.agent.blog_writer.nodes import input_processor_node
+from src.agent.blog_writer.nodes.topic_analyzer import topic_analyzer_node
+from src.agent.blog_writer.nodes.research_coordinator import research_coordinator_node
+from src.agent.blog_writer.nodes.research.web_research import (
     web_research_dispatcher,
     perform_web_search,
     aggregate_web_research
 )
-from .nodes.research.internal_research import internal_research_node
-from .nodes.content.strategist import content_strategist_node
-from .nodes.content.writers import (
-    section_writing_dispatcher,
-    write_individual_section,
-    aggregate_sections
+from src.agent.blog_writer.nodes.research.internal_research import internal_research_node
+from src.agent.blog_writer.nodes.content.strategist import content_strategist_node
+from src.agent.blog_writer.nodes.content.writers import (
+    section_writing_dispatcher
 )
-from .nodes.content.assembler import content_assembler_node
-from .nodes.enhancement.internal_linking import internal_linking_node
-from .nodes.enhancement.external_linking import external_linking_node
+from src.agent.blog_writer.nodes.content.assembler import content_assembler_node
+from src.agent.blog_writer.nodes.enhancement.internal_linking import internal_linking_node
+from src.agent.blog_writer.nodes.enhancement.external_linking import external_linking_node
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -51,10 +49,14 @@ def should_continue_or_fail(state: BlogWriterState) -> str:
         return "research_coordinator"
     elif state.get('current_step') == 'web_research':
         return "web_research_dispatcher"
+    elif state.get('current_step') == 'web_search_execution':
+        return "aggregate_web_research"
     elif state.get('current_step') == 'internal_research':
         return "internal_research"
     elif state.get('current_step') == 'content_strategy':
         return "content_strategist"
+    elif state.get('current_step') == 'content_creation':
+        return "section_writing_dispatcher"
     elif state.get('current_step') == 'section_writing':
         return "section_writing_dispatcher"
     elif state.get('current_step') == 'content_assembly':
@@ -112,8 +114,6 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
     
     # Add section writing nodes
     builder.add_node("section_writing_dispatcher", section_writing_dispatcher)
-    builder.add_node("write_individual_section", write_individual_section)
-    builder.add_node("aggregate_sections", aggregate_sections)
     
     # Add content assembler node
     builder.add_node("content_assembler", content_assembler_node)
@@ -291,15 +291,16 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
     )
     
     # Add edges for web research flow
-    # Web research dispatcher uses Send for parallel searches
+    # Web research dispatcher prepares searches, then goes to execution
     builder.add_conditional_edges(
         "web_research_dispatcher",
-        lambda x: ["perform_web_search"],  # Always goes to perform_web_search
-        ["perform_web_search"]
+        should_continue_or_fail,
+        {
+            "aggregate_web_research": "aggregate_web_research",
+            "internal_research": "internal_research",
+            "error_handler": "error_handler"
+        }
     )
-    
-    # All web searches go to aggregation
-    builder.add_edge("perform_web_search", "aggregate_web_research")
     
     # After aggregation, check where to go next
     builder.add_conditional_edges(
@@ -327,24 +328,15 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
         should_continue_or_fail,
         {
             "section_writing_dispatcher": "section_writing_dispatcher",
-            "error_handler": "error_handler"
+            "error_handler": "error_handler",
+            "placeholder_final": "placeholder_final"
         }
     )
     
     # Add edges for section writing flow
-    # Section writing dispatcher uses Send for parallel section writing
+    # Section writing dispatcher now handles all writing internally
     builder.add_conditional_edges(
         "section_writing_dispatcher",
-        lambda x: ["write_individual_section"],  # Always goes to write_individual_section
-        ["write_individual_section"]
-    )
-    
-    # All section writings go to aggregation
-    builder.add_edge("write_individual_section", "aggregate_sections")
-    
-    # After section aggregation, check where to go next
-    builder.add_conditional_edges(
-        "aggregate_sections",
         should_continue_or_fail,
         {
             "content_assembler": "content_assembler",

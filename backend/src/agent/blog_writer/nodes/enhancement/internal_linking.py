@@ -18,7 +18,7 @@ from google.genai import Client
 
 from ...state import BlogWriterState, update_progress, add_error, add_warning
 from ...schemas import InternalLink
-from ...tools.content_db import get_content_database
+from ...tools.content_db import content_db
 from ...prompts import get_current_date
 
 # Set up logging

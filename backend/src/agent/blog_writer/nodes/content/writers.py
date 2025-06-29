@@ -35,13 +35,13 @@ genai_client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 def section_writing_dispatcher(
     state: BlogWriterState,
     config: RunnableConfig
-) -> List[Send]:
+) -> BlogWriterState:
     """
-    Dispatch section writing tasks in parallel.
+    Prepare section writing tasks and execute them sequentially.
     
     This node:
     1. Creates writing tasks for introduction, body sections, and conclusion
-    2. Creates Send objects for parallel execution
+    2. Executes section writing sequentially 
     3. Prepares context for each section
     
     Args:
@@ -49,7 +49,7 @@ def section_writing_dispatcher(
         config: LangGraph configuration
         
     Returns:
-        List of Send objects for parallel section writing
+        Updated state with written sections
     """
     
     logger.info("=" * 50)
@@ -63,7 +63,8 @@ def section_writing_dispatcher(
     if not outline:
         logger.error("No content outline found in strategy")
         add_error(state, "Content outline missing from strategy")
-        return []
+        state['current_step'] = 'content_assembly'
+        return state
     
     # Get selected title (first option or fallback)
     title_options = content_strategy.get('title_options', [])
@@ -75,82 +76,90 @@ def section_writing_dispatcher(
     logger.info(f"Selected title: {selected_title}")
     logger.info(f"Outline sections: {len(outline.get('sections', []))}")
     
-    sends = []
+    # Initialize section storage
+    introduction = ""
+    body_sections = []
+    conclusion = ""
     section_id = 0
     
-    # 1. Introduction section
-    introduction_outline = outline.get('introduction', {})
-    if introduction_outline:
-        logger.debug("Dispatching introduction writer")
-        sends.append(
-            Send(
-                "write_individual_section",
-                {
-                    "section_type": "introduction",
-                    "section_index": None,
-                    "section_outline": {
-                        "title": selected_title,
-                        "content": introduction_outline,
-                        "target_words": introduction_outline.get('word_count', 200)
-                    },
-                    "research_context": research_context,
-                    "content": "",
-                    "id": section_id
-                }
-            )
-        )
-        section_id += 1
-    
-    # 2. Body sections
-    body_sections = outline.get('sections', [])
-    for idx, section in enumerate(body_sections):
-        logger.debug(f"Dispatching body section writer {idx+1}: {section.get('title', 'Untitled')}")
-        sends.append(
-            Send(
-                "write_individual_section",
-                {
-                    "section_type": "body",
-                    "section_index": idx,
-                    "section_outline": section,
-                    "research_context": research_context,
-                    "content": "",
-                    "id": section_id
-                }
-            )
-        )
-        section_id += 1
-    
-    # 3. Conclusion section
-    conclusion_outline = outline.get('conclusion', {})
-    if conclusion_outline:
-        logger.debug("Dispatching conclusion writer")
-        sends.append(
-            Send(
-                "write_individual_section",
-                {
-                    "section_type": "conclusion",
-                    "section_index": None,
-                    "section_outline": {
-                        "title": "Conclusion",
-                        "content": conclusion_outline,
-                        "target_words": conclusion_outline.get('word_count', 200),
-                        "key_messages": content_strategy.get('key_messages', []),
-                        "cta_options": content_strategy.get('cta_suggestions', [])
-                    },
-                    "research_context": research_context,
-                    "content": "",
-                    "id": section_id
-                }
-            )
-        )
-        section_id += 1
-    
-    logger.info(f"Dispatching {len(sends)} section writing tasks")
-    
-    # Update progress
-    update_progress(state, 'section_writing', 0.5)
-    
-    return sends
+    try:
+        # 1. Write Introduction section
+        introduction_outline = outline.get('introduction', {})
+        if introduction_outline:
+            logger.debug("Writing introduction section")
+            section_state = {
+                "section_type": "introduction",
+                "section_index": None,
+                "section_outline": {
+                    "title": selected_title,
+                    "content": introduction_outline,
+                    "target_words": introduction_outline.get('word_count', 200)
+                },
+                "research_context": research_context,
+                "content": "",
+                "id": section_id
+            }
+            intro_result = write_individual_section(section_state, config)
+            introduction = intro_result.get('introduction', '')
+            section_id += 1
+        
+        # 2. Write Body sections
+        body_section_outlines = outline.get('sections', [])
+        for idx, section_outline in enumerate(body_section_outlines):
+            logger.debug(f"Writing body section {idx+1}: {section_outline.get('title', 'Untitled')}")
+            section_state = {
+                "section_type": "body",
+                "section_index": idx,
+                "section_outline": section_outline,
+                "research_context": research_context,
+                "content": "",
+                "id": section_id
+            }
+            body_result = write_individual_section(section_state, config)
+            body_sections.extend(body_result.get('body_sections', []))
+            section_id += 1
+        
+        # 3. Write Conclusion section
+        conclusion_outline = outline.get('conclusion', {})
+        if conclusion_outline:
+            logger.debug("Writing conclusion section")
+            section_state = {
+                "section_type": "conclusion",
+                "section_index": None,
+                "section_outline": {
+                    "title": "Conclusion",
+                    "content": conclusion_outline,
+                    "target_words": conclusion_outline.get('word_count', 200),
+                    "key_messages": content_strategy.get('key_messages', []),
+                    "cta_options": content_strategy.get('cta_suggestions', [])
+                },
+                "research_context": research_context,
+                "content": "",
+                "id": section_id
+            }
+            conclusion_result = write_individual_section(section_state, config)
+            conclusion = conclusion_result.get('conclusion', '')
+            section_id += 1
+        
+        # Update state with all sections
+        state['introduction'] = introduction
+        state['body_sections'] = body_sections
+        state['conclusion'] = conclusion
+        
+        logger.info(f"Section writing complete: {len(body_sections)} body sections")
+        
+        # Update progress and set next step
+        update_progress(state, 'content_assembly', 0.6)
+        state['current_step'] = 'content_assembly'
+        
+        return state
+        
+    except Exception as e:
+        error_msg = f"Error in section writing dispatcher: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        add_error(state, error_msg)
+        state['current_step'] = 'content_assembly'
+        return state
 
 
 def write_individual_section(

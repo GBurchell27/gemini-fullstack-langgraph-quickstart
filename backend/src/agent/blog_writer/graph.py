@@ -5,6 +5,7 @@ Main graph construction for the blog writing workflow.
 """
 
 import logging
+from datetime import datetime
 from langgraph.graph import StateGraph, START, END
 from langchain_core.runnables import RunnableConfig
 
@@ -18,6 +19,15 @@ from .nodes.research.web_research import (
     aggregate_web_research
 )
 from .nodes.research.internal_research import internal_research_node
+from .nodes.content.strategist import content_strategist_node
+from .nodes.content.writers import (
+    section_writing_dispatcher,
+    write_individual_section,
+    aggregate_sections
+)
+from .nodes.content.assembler import content_assembler_node
+from .nodes.enhancement.internal_linking import internal_linking_node
+from .nodes.enhancement.external_linking import external_linking_node
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -43,6 +53,18 @@ def should_continue_or_fail(state: BlogWriterState) -> str:
         return "web_research_dispatcher"
     elif state.get('current_step') == 'internal_research':
         return "internal_research"
+    elif state.get('current_step') == 'content_strategy':
+        return "content_strategist"
+    elif state.get('current_step') == 'section_writing':
+        return "section_writing_dispatcher"
+    elif state.get('current_step') == 'content_assembly':
+        return "content_assembler"
+    elif state.get('current_step') == 'internal_linking':
+        return "internal_linking"
+    elif state.get('current_step') == 'external_linking':
+        return "external_linking"
+    elif state.get('current_step') == 'final_output':
+        return "final_output_generator"
     return "placeholder_final"
 
 
@@ -85,9 +107,70 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
     # Add internal research node
     builder.add_node("internal_research", internal_research_node)
     
-    # TODO: Add more nodes as we implement them
-    # builder.add_node("web_research", web_research_agent)
-    # etc...
+    # Add content strategist node
+    builder.add_node("content_strategist", content_strategist_node)
+    
+    # Add section writing nodes
+    builder.add_node("section_writing_dispatcher", section_writing_dispatcher)
+    builder.add_node("write_individual_section", write_individual_section)
+    builder.add_node("aggregate_sections", aggregate_sections)
+    
+    # Add content assembler node
+    builder.add_node("content_assembler", content_assembler_node)
+    
+    # Add enhancement nodes
+    builder.add_node("internal_linking", internal_linking_node)
+    builder.add_node("external_linking", external_linking_node)
+    
+    # Add final output generator node
+    def final_output_generator(state: BlogWriterState, config: RunnableConfig) -> BlogWriterState:
+        """Generate final blog output with all enhancements"""
+        logger.info("=" * 50)
+        logger.info("GENERATING FINAL OUTPUT")
+        logger.info("=" * 50)
+        
+        try:
+            # Get final content
+            final_content = state.get('content_with_links', state.get('assembled_content', ''))
+            
+            # Get metadata
+            content_strategy = state.get('content_strategy', {})
+            title_options = content_strategy.get('title_options', [])
+            selected_title = title_options[0] if title_options else state.get('blog_idea', 'Blog Post')
+            
+            # Create final blog result
+            blog_result = {
+                'title': selected_title,
+                'content_markdown': final_content,
+                'seo_metadata': state.get('seo_metadata', {}),
+                'quality_metrics': state.get('quality_metrics', {}),
+                'internal_links': state.get('internal_links', []),
+                'external_links': state.get('external_links', []),
+                'word_count': len(final_content.split()),
+                'created_at': datetime.now().isoformat(),
+                'processing_summary': {
+                    'nodes_executed': len(state.get('debug_info', [])),
+                    'workflow_completed': True
+                }
+            }
+            
+            state['final_blog_result'] = blog_result
+            state['current_step'] = 'completed'
+            state['progress'] = 1.0
+            
+            logger.info(f"Final output generated for: {selected_title}")
+            logger.info(f"Word count: {blog_result['word_count']}")
+            logger.info(f"Internal links: {len(blog_result['internal_links'])}")
+            logger.info(f"External links: {len(blog_result['external_links'])}")
+            
+            return state
+            
+        except Exception as e:
+            logger.error(f"Error in final output generation: {str(e)}")
+            state['errors'] = state.get('errors', []) + [f"Output generation failed: {str(e)}"]
+            return state
+    
+    builder.add_node("final_output_generator", final_output_generator)
     
     # Add error handler node
     def error_handler_node(state: BlogWriterState, config: RunnableConfig) -> BlogWriterState:
@@ -233,12 +316,74 @@ def create_blog_writer_graph(config: BlogWriterConfig = None):
         "internal_research",
         should_continue_or_fail,
         {
-            "placeholder_final": "placeholder_final",
+            "content_strategist": "content_strategist",
+            "error_handler": "error_handler"
+        }
+    )
+    
+    # Add conditional routing after content strategist
+    builder.add_conditional_edges(
+        "content_strategist",
+        should_continue_or_fail,
+        {
+            "section_writing_dispatcher": "section_writing_dispatcher",
+            "error_handler": "error_handler"
+        }
+    )
+    
+    # Add edges for section writing flow
+    # Section writing dispatcher uses Send for parallel section writing
+    builder.add_conditional_edges(
+        "section_writing_dispatcher",
+        lambda x: ["write_individual_section"],  # Always goes to write_individual_section
+        ["write_individual_section"]
+    )
+    
+    # All section writings go to aggregation
+    builder.add_edge("write_individual_section", "aggregate_sections")
+    
+    # After section aggregation, check where to go next
+    builder.add_conditional_edges(
+        "aggregate_sections",
+        should_continue_or_fail,
+        {
+            "content_assembler": "content_assembler",
+            "error_handler": "error_handler"
+        }
+    )
+    
+    # Add conditional routing after content assembler
+    builder.add_conditional_edges(
+        "content_assembler",
+        should_continue_or_fail,
+        {
+            "internal_linking": "internal_linking",
+            "error_handler": "error_handler"
+        }
+    )
+    
+    # Add conditional routing after internal linking
+    builder.add_conditional_edges(
+        "internal_linking",
+        should_continue_or_fail,
+        {
+            "external_linking": "external_linking",
+            "error_handler": "error_handler"
+        }
+    )
+    
+    # Add conditional routing after external linking
+    builder.add_conditional_edges(
+        "external_linking",
+        should_continue_or_fail,
+        {
+            "final_output_generator": "final_output_generator",
             "error_handler": "error_handler"
         }
     )
     
     # Add edges to END
+    builder.add_edge("final_output_generator", END)
     builder.add_edge("placeholder_final", END)
     builder.add_edge("placeholder_web_research", END)
     builder.add_edge("placeholder_internal_research", END)

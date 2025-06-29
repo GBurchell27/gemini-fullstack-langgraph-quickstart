@@ -289,133 +289,163 @@ export const BlogWriter: React.FC = () => {
             </div>
           </div>
         ) : (
-          // Results View
-          <div className="h-full p-4">
-            <Tabs defaultValue="content" className="h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <GreenTabsList>
-                  <GreenTabsTrigger value="content">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </GreenTabsTrigger>
-                  <GreenTabsTrigger value="markdown">
-                    <Code className="h-4 w-4 mr-2" />
-                    Markdown
-                  </GreenTabsTrigger>
-                  <GreenTabsTrigger value="analytics">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Analytics
-                  </GreenTabsTrigger>
-                </GreenTabsList>
-                
-                <div className="flex items-center gap-2">
-                  <GreenButton
-                    onClick={() => copyToClipboard(blogResult.content)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </GreenButton>
-                  <GreenButton
-                    onClick={downloadAsMarkdown}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </GreenButton>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-hidden">
-                <TabsContent value="content" className="h-full">
-                  <Card className="h-full bg-white/5 border-white/10">
-                    <ScrollArea className="h-full p-6">
-                      <div className="prose prose-invert max-w-none text-white/80">
-                        <pre className="whitespace-pre-wrap font-sans">{blogResult.content}</pre>
-                      </div>
-                    </ScrollArea>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="markdown" className="h-full">
-                  <Card className="h-full bg-white/5 border-white/10">
-                    <ScrollArea className="h-full p-6">
-                      <pre className="text-white/80 text-sm font-mono whitespace-pre-wrap">
-                        {blogResult.content}
-                      </pre>
-                    </ScrollArea>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="analytics" className="h-full">
-                  <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <Card className="bg-white/5 border-white/10 p-4">
-                      <h3 className="text-lg font-semibold text-white/80 mb-4">SEO Optimization</h3>
-                      <div className="space-y-3">
-                        {blogResult.seo_metadata?.meta_title && (
-                          <div>
-                            <label className="text-xs text-white/60">Meta Title</label>
-                            <p className="text-white/80 text-sm">{blogResult.seo_metadata.meta_title}</p>
-                          </div>
-                        )}
-                        {blogResult.seo_metadata?.meta_description && (
-                          <div>
-                            <label className="text-xs text-white/60">Meta Description</label>
-                            <p className="text-white/80 text-sm">{blogResult.seo_metadata.meta_description}</p>
-                          </div>
-                        )}
-                        {blogResult.seo_metadata?.focus_keywords && (
-                          <div>
-                            <label className="text-xs text-white/60">Focus Keywords</label>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {blogResult.seo_metadata.focus_keywords.map((keyword, index) => (
-                                <GreenBadge key={index}>
-                                  {keyword}
-                                </GreenBadge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-
-                    <Card className="bg-white/5 border-white/10 p-4">
-                      <h3 className="text-lg font-semibold text-white/80 mb-4">Quality Analysis</h3>
-                      <div className="space-y-3">
-                        {blogResult.quality_metrics?.overall_score && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/70">Overall Score</span>
-                            <div className="flex items-center gap-2">
-                              <Star className="h-4 w-4 text-yellow-400" />
-                              <span className="text-white/90 font-semibold">
-                                {Math.round(blogResult.quality_metrics.overall_score * 10)}/10
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        {blogResult.statistics?.word_count && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/70">Word Count</span>
-                            <span className="text-white/90">{blogResult.statistics.word_count}</span>
-                          </div>
-                        )}
-                        {blogResult.statistics?.reading_time_minutes && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/70">Reading Time</span>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-white/60" />
-                              <span className="text-white/90">{blogResult.statistics.reading_time_minutes} min</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
+          // Results View with Analytics Panel
+          <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
+            {/* Left Panel - Content Tabs */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="content" className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <GreenTabsList>
+                    <GreenTabsTrigger value="content">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview
+                    </GreenTabsTrigger>
+                    <GreenTabsTrigger value="markdown">
+                      <Code className="h-4 w-4 mr-2" />
+                      Markdown
+                    </GreenTabsTrigger>
+                  </GreenTabsList>
+                  
+                  <div className="flex items-center gap-2">
+                    <GreenButton
+                      onClick={() => copyToClipboard(blogResult.content)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy
+                    </GreenButton>
+                    <GreenButton
+                      onClick={downloadAsMarkdown}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </GreenButton>
                   </div>
-                </TabsContent>
+                </div>
+
+                <div className="flex-1 overflow-hidden">
+                  <TabsContent value="content" className="h-full">
+                    <Card className="h-full bg-white/5 border-white/10">
+                      <ScrollArea className="h-full p-6">
+                        <div className="prose prose-invert max-w-none text-white/80">
+                          <pre className="whitespace-pre-wrap font-sans">{blogResult.content}</pre>
+                        </div>
+                      </ScrollArea>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="markdown" className="h-full">
+                    <Card className="h-full bg-white/5 border-white/10">
+                      <ScrollArea className="h-full p-6">
+                        <pre className="text-white/80 text-sm font-mono whitespace-pre-wrap">
+                          {blogResult.content}
+                        </pre>
+                      </ScrollArea>
+                    </Card>
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </div>
+
+            {/* Right Panel - Analytics */}
+            <div className="bg-white/5 backdrop-blur-lg rounded-lg border border-white/10 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="h-5 w-5 text-green-400" />
+                <h2 className="text-lg font-semibold text-white/80">Analytics</h2>
               </div>
-            </Tabs>
+              
+              <ScrollArea className="h-full max-h-[calc(100vh-200px)]">
+                <div className="space-y-4">
+                  {/* SEO Optimization Card */}
+                  <Card className="bg-white/5 border-white/10 p-4">
+                    <h3 className="text-lg font-semibold text-white/80 mb-4">SEO Optimization</h3>
+                    <div className="space-y-3">
+                      {blogResult.seo_metadata?.meta_title && (
+                        <div>
+                          <label className="text-xs text-white/60">Meta Title</label>
+                          <p className="text-white/80 text-sm">{blogResult.seo_metadata.meta_title}</p>
+                        </div>
+                      )}
+                      {blogResult.seo_metadata?.meta_description && (
+                        <div>
+                          <label className="text-xs text-white/60">Meta Description</label>
+                          <p className="text-white/80 text-sm">{blogResult.seo_metadata.meta_description}</p>
+                        </div>
+                      )}
+                      {blogResult.seo_metadata?.focus_keywords && (
+                        <div>
+                          <label className="text-xs text-white/60">Focus Keywords</label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {blogResult.seo_metadata.focus_keywords.map((keyword, index) => (
+                              <GreenBadge key={index}>
+                                {keyword}
+                              </GreenBadge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+
+                  {/* Quality Analysis Card */}
+                  <Card className="bg-white/5 border-white/10 p-4">
+                    <h3 className="text-lg font-semibold text-white/80 mb-4">Quality Analysis</h3>
+                    <div className="space-y-3">
+                      {blogResult.quality_metrics?.overall_score && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/70">Overall Score</span>
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-yellow-400" />
+                            <span className="text-white/90 font-semibold">
+                              {Math.round(blogResult.quality_metrics.overall_score * 10)}/10
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {blogResult.statistics?.word_count && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/70">Word Count</span>
+                          <span className="text-white/90">{blogResult.statistics.word_count}</span>
+                        </div>
+                      )}
+                      {blogResult.statistics?.reading_time_minutes && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/70">Reading Time</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4 text-white/60" />
+                            <span className="text-white/90">{blogResult.statistics.reading_time_minutes} min</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+
+                  {/* Progress Summary Card (Optional - showing completion status) */}
+                  <Card className="bg-white/5 border-white/10 p-4">
+                    <h3 className="text-lg font-semibold text-white/80 mb-4">Generation Summary</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70 text-sm">Steps Completed</span>
+                        <span className="text-green-400 font-semibold">{blogSteps.filter(s => s.status === "completed").length}/{blogSteps.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70 text-sm">Generation Time</span>
+                        <span className="text-white/90 text-sm">
+                          {startTime ? `${Math.round((new Date().getTime() - startTime.getTime()) / 1000)}s` : "--"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70 text-sm">Status</span>
+                        <GreenBadge>Completed</GreenBadge>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         )}
       </div>
